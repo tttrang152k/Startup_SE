@@ -1,0 +1,29 @@
+@startuml
+title Sequence – Customer/Broker Tracks Shipment
+autonumber
+actor "Customer/Broker" as CustomerBroker
+participant TrackingPortal
+participant LoadService
+participant DocumentService
+
+CustomerBroker -> TrackingPortal : Open and enter tracking ID
+TrackingPortal -> TrackingPortal : Validate access
+
+alt Not Authorized
+  TrackingPortal --> CustomerBroker : Show access denied
+else Authorized
+  TrackingPortal -> LoadService : Fetch load details
+  LoadService --> TrackingPortal : Return load details
+  TrackingPortal --> CustomerBroker : Show load information
+
+  CustomerBroker -> TrackingPortal : Check documents (BOL, POD)
+  TrackingPortal -> DocumentService : Send document request
+  DocumentService --> TrackingPortal : Return document response
+
+  alt BOL/POD Available
+    TrackingPortal --> CustomerBroker : Provide document download links
+  else Documents Pending
+    TrackingPortal --> CustomerBroker : Show "Documents Pending"
+  end
+end
+@enduml

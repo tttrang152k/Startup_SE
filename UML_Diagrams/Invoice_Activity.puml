@@ -1,0 +1,25 @@
+@startuml
+title UC - Generate Invoice for Delivered Load
+start
+  :View Truck Load;
+  :Check Load Status;
+
+if (Delivered?) then (yes)
+
+    :Check Delivered Documents;
+    if (Delivered Proof?) then (yes)
+        :Adjust Line Items if Needed;
+        :Create Invoice;
+        :Send Invoice to Customer;
+        :Notify Stakeholders;
+    else (no)
+        :Contact Driver;
+        stop
+    endif
+  stop
+else (no)
+    :Block Invoicing Until Delivered;
+  stop
+endif
+
+@enduml

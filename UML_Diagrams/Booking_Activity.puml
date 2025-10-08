@@ -1,0 +1,23 @@
+@startuml
+title UC - Book a Shipment
+start
+  :Submit Booking;
+
+  :Validate Booking;
+  if (Valid?) then (yes)
+    :Create Load Request;
+    :Notify Dispatcher;
+  else (no)
+    :Return Errors to Customer;
+    stop
+  endif
+
+  :Review Request;
+  :Contact Customer;
+  :Confirm Load Details;
+  :Assign Driver;
+  :Dispatch the Load;
+  :Notify Stakeholders;
+stop
+
+@enduml

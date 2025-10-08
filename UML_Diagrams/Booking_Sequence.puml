@@ -1,0 +1,44 @@
+@startuml
+title Sequence – Book a Shipment
+autonumber
+actor Customer
+actor Dispatcher
+actor Stakeholder
+participant BookingPortal
+participant LoadService
+participant EventNotifier
+
+Customer -> BookingPortal : Submit booking request
+BookingPortal -> BookingPortal : Validate booking request
+
+alt Invalid Booking
+  BookingPortal --> Customer : Show booking errors
+else Valid Booking
+  BookingPortal -> Dispatcher : Send valid booking request
+  Dispatcher -> BookingPortal : Open booking request
+  BookingPortal --> Dispatcher : Display booking details
+
+  Dispatcher -> Customer : Contact and confirm load details
+  Customer --> Dispatcher : Confirm load details
+
+  Dispatcher -> LoadService : Create load request
+
+  LoadService --> Dispatcher : Return load ID
+  Dispatcher -> LoadService : Assign driver/trailer
+
+  LoadService -> EventNotifier : Create new load event
+  LoadService --> Dispatcher : Return load with assigned driver
+  EventNotifier --> Stakeholder : Return new load notification
+
+
+  Dispatcher -> LoadService : Dispatch load
+  LoadService -> BookingPortal : Return booked load
+  BookingPortal -> Customer : Confirm load booking
+  LoadService -> EventNotifier : Create dispatch event
+
+  EventNotifier -> Stakeholder : Notify new dispatch load
+  EventNotifier --> Dispatcher : Return dispatch load
+  EventNotifier -> Customer : Notify new dispatch
+
+end
+@enduml

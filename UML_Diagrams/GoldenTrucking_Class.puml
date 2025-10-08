@@ -1,0 +1,241 @@
+@startuml
+title Golden Trucking – Core Class Diagram (Simplified + Services)
+
+' ======= CORE DOMAIN =======
+class Load {
+  - id: String
+  - referenceNo: String
+  - status: String
+  - rateAmount: Float
+  - eta: DateTime
+  - trackingId: String
+  ' --- collapsed details ---
+  - rateConfirmationRef: URI
+  - assignedAt: DateTime
+  - assignmentNotes: String
+  - driverId: String
+  - tractorId: String
+  - trailerId: String
+  - pickupAddress: String
+  - pickupScheduledAt: DateTime
+  - pickupActualAt: DateTime
+  - deliveryAddress: String
+  - deliveryScheduledAt: DateTime
+  - deliveryActualAt: DateTime
+  --
+  + assignDriver(driver: Driver): void
+  + assignEquipment(tractorId: String, trailerId: String): void
+  + displayLoadInfo(): void
+  + updateStatus(status: String): void
+}
+
+' ======= PEOPLE =======
+abstract class User {
+  - id: String
+  - name: String
+  - email: String
+  - phone: String
+  - createdAt: DateTime
+  --
+  + updateContact(email: String, phone: String): void
+}
+
+class Customer {
+  - company: String
+  - billingEmail: String
+  --
+  + requestBooking(form: String): String
+}
+
+class Broker {
+  - mcNumber: String
+  --
+  + submitLoad(form: String): String
+}
+
+abstract class Employee {
+  - employeeId: String
+  - hireDate: DateTime
+  --
+  + active(): boolean
+}
+
+class Dispatcher {
+  --
+  + reviewBooking(formRef: String): boolean
+  + assign(loadId: String, driverId: String, tractorId: String, trailerId: String): void
+  + dispatch(loadId: String): void
+}
+
+class BillingSpecialist {
+  --
+  + prepareInvoice(loadId: String): String
+  + sendInvoice(invoiceId: String, toEmail: String): void
+}
+
+class Accountant {
+  --
+  + postPayment(invoiceId: String, amount: Float, method: String): void
+  + reconcile(invoiceId: String): Float
+}
+
+class Driver {
+  - licenseNo: String
+  - status: String
+  - phone: String
+  --
+  + isAvailable(): boolean
+  + acceptAssignment(loadId: String): void
+}
+
+' Inheritance
+Customer --|> User
+Broker --|> User
+Employee --|> User
+Dispatcher --|> Employee
+BillingSpecialist --|> Employee
+Accountant --|> Employee
+Driver --|> Employee
+
+' ======= INVOICING =======
+class InvoiceService {
+  - name: String
+  --
+  + createInvoice(loadId: String): Invoice
+  + sendInvoice(invoiceId: String, toEmail: String): void
+  + recordPayment(invoiceId: String, payment: Payment): void
+  + getInvoice(invoiceId: String): Invoice
+}
+
+class Invoice {
+  - id: String
+  - issuedAt: DateTime
+  - status: String
+  - subtotal: Float
+  - tax: Float
+  - total: Float
+  - loadId: String
+  --
+  + balance(): Float
+  + applyPayment(p: Payment): void
+  + computeTotals(): void
+}
+
+class Payment {
+  - id: String
+  - amount: Float
+  - method: String
+  - paidAt: DateTime
+  - reference: String
+  - status: String
+  --
+  + isCleared(): boolean
+}
+
+class LoadService {
+  - name: String
+  --
+  + getLoad(loadId: String): Load
+  + getTracking(loadId: String): TrackingInfo
+  + listTrackingEvents(loadId: String): List<TrackingEvent>
+  + updateStatus(loadId: String, status: String): void
+}
+
+class DocumentService {
+  - name: String
+  --
+  + upload(loadId: String, type: String, fileRef: URI): String
+  + list(loadId: String): List<Document>
+  + get(docId: String): Document
+  + verify(docId: String): void
+}
+
+class EventNotify {
+  - name: String
+  --
+  + publish(eventType: String, refId: String, audience: String): Notification
+  + notifyLoadStatusChanged(loadId: String, to: String): Notification
+  + notifyInvoiceSent(invoiceId: String, to: String): Notification
+}
+
+class Notification {
+  - id: String
+  - type: String
+  - message: String
+  - channel: String
+  - recipientId: String
+  - createdAt: DateTime
+  - deliveredAt: DateTime
+  - readAt: DateTime
+  - refType: String
+  - refId: String
+  --
+  + markDelivered(): void
+  + markRead(): void
+}
+
+
+' ======= MINIMAL HELPER CLASSES (still simplified) =======
+class TrackingInfo {
+  - status: String
+  - eta: DateTime
+  - lastLocation: String
+  - lastUpdated: DateTime
+}
+
+class TrackingEvent {
+  - occurredAt: DateTime
+  - status: String
+  - location: String
+}
+
+class Document {
+  - id: String
+  - loadId: String
+  - type: String
+  - status: String
+  - fileRef: URI
+  - uploadedAt: DateTime
+  --
+  + downloadUri(): URI
+}
+
+' ======= RELATIONSHIPS =======
+' Loads and people
+Load "1" --> Customer : bookedBy >
+Load "0..1" --> Broker : arrangedBy >
+Load "0..1" --> Dispatcher : dispatchedBy >
+Load "0..1" --> Driver : assignedTo >
+
+' Invoicing
+Load "0..1" --> Invoice : generates >
+Invoice --> Load : forLoad >
+Invoice "0..*" o-- Payment
+InvoiceService ..> Invoice : <<produces>>
+
+' Services <-> domain
+LoadService ..> Load : <<manages>>
+LoadService --> TrackingInfo : <<returns>>
+LoadService --> TrackingEvent : <<lists>>
+DocumentService ..> Document : <<manages>>
+Document --> Load : forLoad >
+
+' Notifications wiring
+EventNotify ..> Notification : <<produces>>
+EventNotify ..> User : <<routesTo>>
+LoadService ..> EventNotify : status/dispatch events
+InvoiceService ..> EventNotify : invoice events
+DocumentService ..> EventNotify : document events
+Notification --> Load : about >
+Notification --> Invoice : about >
+
+
+' Who uses services
+Dispatcher ..> LoadService : assign/dispatch
+BillingSpecialist ..> InvoiceService : prepare/send
+BillingSpecialist ..> LoadService : view load status
+BillingSpecialist ..> DocumentService : fetch proofs (BOL/POD)
+Accountant ..> InvoiceService : post/reconcile
+Driver ..> DocumentService : upload BOL/POD
+
+@enduml

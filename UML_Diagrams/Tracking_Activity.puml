@@ -1,0 +1,22 @@
+@startuml
+title UC - Customer/Broker Tracks Shipment
+start
+  :Open Tracking Portal;
+  :Enter Tracking ID;
+  :Validate Access;
+  if (Authorized?) then (yes)
+    :Fetch Load Details;
+    :Show Load Information;
+    if (BOL/POD Documents Available?) then (yes)
+      :Provide Document Download links;
+    else (no)
+      :Show "Documents Pending";
+    endif
+  else (no)
+    :Show Access Denied;
+    stop
+  endif
+
+stop
+
+@enduml

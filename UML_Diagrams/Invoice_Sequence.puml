@@ -1,0 +1,39 @@
+@startuml
+title Sequence – Generate Invoice for Delivered Load
+autonumber
+actor BillingSpecialist
+actor "Customer/Broker" as CustomerBroker
+actor Driver
+actor Stakeholder
+participant BillingPortal
+participant LoadService
+participant DocumentService
+participant InvoiceService
+participant EventNotifier
+
+BillingSpecialist -> BillingPortal : View truck load
+BillingPortal -> LoadService : Get load details
+LoadService --> BillingPortal : Return load information
+
+alt Load Not Delivered
+  BillingPortal --> BillingSpecialist : Block invoicing until delivered
+else Load Delivered
+  BillingSpecialist -> BillingPortal : Check delivered documents
+  BillingPortal -> DocumentService : Fetch delivered proofs (BOL/POD)
+  DocumentService --> BillingPortal : Return document availability
+
+  alt Missing Delivered Proof
+    BillingPortal --> BillingSpecialist : Display "Missing BOL/POD" notice
+    BillingSpecialist -> Driver : Request document upload
+  else Proof Present
+    BillingSpecialist -> BillingPortal : View and adjust line items if needed
+    BillingPortal -> InvoiceService : Create invoice
+    InvoiceService --> BillingPortal : Return invoice details
+
+    InvoiceService -> EventNotifier : Create invoice event
+    EventNotifier -> CustomerBroker : Deliver invoice link
+    EventNotifier -> Stakeholder : Notify invoice sent
+    EventNotifier --> BillingSpecialist : Confirm billing notification
+  end
+end
+@enduml
