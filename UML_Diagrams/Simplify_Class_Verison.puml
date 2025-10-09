@@ -1,5 +1,5 @@
 @startuml
-title Golden Trucking – Core Class Diagram (User + Employee only)
+title Golden Trucking – Class Diagram
 
 class Load {
   - id: String
@@ -34,7 +34,7 @@ class User {
   - name: String
   - email: String
   - phone: String
-  - role: String          ' Customer, Broker, Employee
+  - role: String
   - createdAt: DateTime
   --
   + updateContact(email: String, phone: String): void
@@ -46,7 +46,7 @@ class User {
 class Employee {
   - employeeId: String
   - hireDate: DateTime
-  - position: String      ' Dispatcher, Driver, Billing, Accounting (label only)
+  - position: String
   --
   + processBooking(formRef: String): boolean
   + manageDispatch(loadId: String, driverId: String, tractorId: String, trailerId: String): void
